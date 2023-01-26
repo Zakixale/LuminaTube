@@ -10,6 +10,6 @@ module.exports = {
 		if (!queue) return await interaction.reply("Il n'y a pas de musiques en queue.")
 
 		queue.destroy()
-        await interaction.reply("Le bot a été arrêté et la queue de musiques est supprimée !")
+        await interaction.reply("Le bot a été arrêté et la queue de musiques a été supprimée !")
 	},
 }

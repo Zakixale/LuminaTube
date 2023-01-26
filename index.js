@@ -27,8 +27,8 @@ client.player = new Player(client, {
     }
 })
 
-const commandsPath = path.join(__dirname, 'commands')
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'))
+const commandsPath = path.join(__dirname, "commands")
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"))
 client.commands = new Collection()
 
 for (const file  of commandFiles){

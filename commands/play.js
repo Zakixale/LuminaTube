@@ -9,21 +9,25 @@ module.exports = {
         .addSubcommand((subcommand) => 
             subcommand
                 .setName("song")
-                .setDescription("Loads a single song from url")
-                .addStringOption((option) => option.setName("url").setDescription("the song's url").setRequired(true))
+                .setDescription("Charge une seule musique par URL")
+                .addStringOption((option) => option.setName("url").setDescription("L'url de la musique").setRequired(true))
         )
         .addSubcommand((subcommand) => 
             subcommand
                 .setName("search")
-                .setDescription("Seaches for sogn based on provided keywords")
-                .addStringOption((option) => option.setName("searchterms").setDescription("the search keywords").setRequired(true))
+                .setDescription("Recherche par mots clés")
+                .addStringOption((option) => option.setName("keywords").setDescription("Les mots clés de la recherche").setRequired(true))
         ),
         execute: async(client, interaction) => {
 
             if(!interaction.member.voice.channel)
                 return interaction.reply("Vous devez être dans un salon vocal pour effectuer cela.")
 
-            const queue = await client.player.createQueue(interaction.guild)
+            const queue = await client.player.createQueue(interaction.guild, {
+                metadata: {
+                    channel: interaction.channel
+                }
+            })
 
             let embed = new EmbedBuilder()
 
@@ -38,9 +42,16 @@ module.exports = {
                 if(result.tracks.length === 0)
                     return interaction.reply("Pas de resultat.")
 
-                if (!queue.connection) await queue.connect(interaction.member.voice.channel)
+                try{
+                    if (!queue.connection) await queue.connect(interaction.member.voice.channel)
+                }
+                catch {
+                    queue.destroy();
+                    return await interaction.reply({ content: "Impossible de rejoindre votre salon vocal !", ephemeral: true });
+                }                
 
                 const song = result.tracks[0]
+
                 await queue.addTrack(song)
 
                 embed
@@ -49,16 +60,22 @@ module.exports = {
                     .setFooter({text: `Durée: ${song.duration}`})
 
             } else if(interaction.options.getSubcommand() === "search"){
-                let searchterms = interaction.options.getString("searchterms")
+                let keywords = interaction.options.getString("keywords")
 
-                const result = await client.player.search(searchterms, {
+                const result = await client.player.search(keywords, {
                     requestedBy: interaction.user
                 })
 
                 if(result.tracks.length === 0)
                     return interaction.reply("Pas de resultat.")
 
-                if (!queue.connection) await queue.connect(interaction.member.voice.channel)
+                    try{
+                        if (!queue.connection) await queue.connect(interaction.member.voice.channel)
+                    }
+                    catch {
+                        queue.destroy();
+                        return await interaction.reply({ content: "Impossible de rejoindre votre salon vocal !", ephemeral: true });
+                    } 
 
                 const song = result.tracks[0]
                 await queue.addTrack(song)
@@ -68,7 +85,9 @@ module.exports = {
                     .setThumbnail(song.thumbnail)
                     .setFooter({text: `Durée: ${song.duration}`})
             }
-            if (!queue.playing) await queue.play()
+            if (!queue.playing) {
+                await queue.play()
+            }
             await interaction.reply({
                 embeds: [embed]
             })
